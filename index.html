@@ -13,6 +13,11 @@
             font-size: 16px;
             resize: vertical; /* Allows resizing textarea vertically */
             overflow: hidden; /* Hides scroll bar */
+            overflow-y: scroll;
+        }
+
+        .margin {
+            margin: 0px 0px 10px; 
         }
 
         /* Script to make the input and textarea auto-expand */
@@ -25,22 +30,29 @@
     <p>&copy; Copyright Learnosity 2024</p>
     <div>
         <!-- <form onsubmit="setupFeedbackAide()"> -->
-            <div>
-                <label for="field3">API secret</label>
-                <input style="width: 700px" type="text" id="field3" oninput="adjustInputHeight(this)" name="field1" value="">
-            </div>
-            <div>
-                <label for="field1">Question</label>
-                <input type="text" id="field1" oninput="adjustInputHeight(this)" name="field1" value="Explain the problems, both personal and societal, resulting from obesity">
-            </div>
-            <div>
-                <label for="field2">Essay</label>
-                <textarea type="text" id="field2" oninput="adjustTextareaHeight(this)" name="field2">Think of obesity as having too much weight on your body, more than what's healthy for you. When someone has too much weight, it can make them feel sick, sad, or tired. It's not good for their heart, and it can make playing or running around harder. Just like when you eat too many sweets and get a tummy ache, eating too much food that's not good for you can make your body feel bad. And when lots of people feel this way, it means doctors and hospitals have to work extra hard to help everyone feel better. It's important for all of us to eat healthy foods, like fruits and veggies, and to play outside instead of sitting inside all the time. This helps us stay happy, healthy, and full of energy to play with our friends!"</textarea>
-            </div>
-            <div style="display: flex;">
+            <div class="margin" style="display: flex;">
                 <button onclick="clearFields()">Clear Fields</button>
-                <input type="submit" value="Submit" onclick="setupFeedbackAide()">
+                <input style="margin-left: 10px;" type="submit" value="Submit" onclick="setupFeedbackAide()">
             </div>
+            <label for="field3">API secret</label>
+            <div class="margin">
+                <input style="width: 700px" type="text" id="field3" oninput="adjustInputHeight(this)" name="field3" value="">
+            </div>
+            <label for="field1">Question</label>
+            <div class="margin">
+                <input type="text" id="field1" oninput="adjustInputHeight(this)" name="field1" value="Explain the problems, both personal and societal, resulting from obesity">
+            </div class="margin">
+            <label for="field2">Essay</label>
+            <div class="margin">
+                <textarea type="text" id="field2" oninput="adjustTextareaHeight(this)" name="field2">Think of obesity as having too much weight on your body, more than what's healthy for you. When someone has too much weight, it can make them feel sick, sad, or tired. It's not good for their heart, and it can make playing or running around harder. Just like when you eat too many sweets and get a tummy ache, eating too much food that's not good for you can make your body feel bad. And when lots of people feel this way, it means doctors and hospitals have to work extra hard to help everyone feel better. It's important for all of us to eat healthy foods, like fruits and veggies, and to play outside instead of sitting inside all the time. This helps us stay happy, healthy, and full of energy to play with our friends!</textarea>
+            </div>
+            <label for="field4">Rubric</label>
+            <button onclick="toggle()">Toggle Rubric</button>
+            <button style="margin-left: 10px;" onclick="resetRubric()">Reset Rubric</button>
+            <div class="margin">
+                <textarea style="display: none;" type="text" id="field4" oninput="adjustTextareaHeight(this)" name="field4"></textarea>
+            </div>
+            
         <!-- </form> -->
     </div>
     <!-- STEP 2. Include the script to load LearnosityFeedback API -->
@@ -70,7 +82,7 @@
         // The Rubric. This is the scoring rubric used to guide our feedback and scoring
         // This is one of the input parameters required by the feedbackSession method
         // See Docs on this here: https://help.learnosity.com/hc/en-us/articles/19937827979805-Feedback-Aide-Rubrics
-        var rubric = `
+        var initialRubric = `
                 {
             "title": "Obesity Essay Rubric",
             "type": "analytic",
@@ -258,7 +270,7 @@
 
                 //  STEP 1. Get an OAuth key and secret (provided here in external json file)
                 const secret = document.querySelector('#field3').value
-                sessionStorage.setItem('apiSecret', secret);
+                localStorage.setItem('apiSecret', secret);
                 // Create the Basic Auth header
                 const authHeader = 'Basic ' + btoa(`OSFVQ1kzSRdpgUTnIIN1qPGXvDJTueOE:${secret}`);
 
@@ -296,10 +308,8 @@
                 // STEP 2: Create an app instance using LearnosityFeedbackAide.init
                 const question = document.querySelector('#field1').value
                 const essay = document.querySelector('#field2').value
-                
-                console.log('question', question);
-                console.log('essay', essay);
-                
+                const rubric = document.querySelector('#field4').value
+                localStorage.setItem('rubric', rubric);
                 const feedbackApp = await LearnosityFeedbackAide.init();
 
                 const sessionUuid = newSessionUuid();
@@ -353,16 +363,37 @@
             element.style.height = element.scrollHeight + 'px';
         }
         function checkSecret() {
-            console.log('checkSecret');
-            const secret = sessionStorage.getItem('apiSecret') ?? '';
+            const secret = localStorage.getItem('apiSecret') ?? '';
             document.querySelector('#field3').value = secret
+        }
+        function checkRubric() {
+            const rubric = localStorage.getItem('rubric') ?? initialRubric;
+            localStorage.setItem('rubric', rubric);
+            document.querySelector('#field4').value = rubric
+        }
+        function toggle() {
+            let rubricElement = document.querySelector('#field4');
+            let display = document.querySelector('#field4').style.display;
+            if(display !== 'none') {
+                rubricElement.style.display = 'none'
+            } else {
+                rubricElement.style.display = 'block';
+            }
+            adjustTextareaHeight(document.getElementById('field4'));
+        }
+        function resetRubric() {
+            let rubricElement = document.querySelector('#field4');
+            rubricElement.value = initialRubric;
+            localStorage.removeItem('rubric');
         }
 
         // Initialize both fields' heights on page load
         window.onload = function() {
+            checkSecret();
+            checkRubric();
             adjustInputHeight(document.getElementById('field1'));
             adjustTextareaHeight(document.getElementById('field2'));
-            checkSecret();
+            adjustTextareaHeight(document.getElementById('field4'));
         };
     </script>
 </body>
