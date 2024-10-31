@@ -1,0 +1,374 @@
+<!doctype html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset='utf-8'>
+    <title>Feedback Aide | Learnosity - Penn Foster</title>
+    <style>
+        /* Style to make input and textarea expand based on content */
+        input[type="text"], textarea {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 8px;
+            font-size: 16px;
+            resize: vertical; /* Allows resizing textarea vertically */
+            overflow: hidden; /* Hides scroll bar */
+        }
+
+        /* Script to make the input and textarea auto-expand */
+    </style>
+</head>
+<body>
+
+    <h3>Feedback Aide POC</h3>
+    <p>Simple single-essay feedback demo</p>
+    <p>&copy; Copyright Learnosity 2024</p>
+    <div>
+        <!-- <form onsubmit="setupFeedbackAide()"> -->
+            <div>
+                <label for="field3">API secret</label>
+                <input style="width: 700px" type="text" id="field3" oninput="adjustInputHeight(this)" name="field1" value="">
+            </div>
+            <div>
+                <label for="field1">Question</label>
+                <input type="text" id="field1" oninput="adjustInputHeight(this)" name="field1" value="Explain the problems, both personal and societal, resulting from obesity">
+            </div>
+            <div>
+                <label for="field2">Essay</label>
+                <textarea type="text" id="field2" oninput="adjustTextareaHeight(this)" name="field2">Think of obesity as having too much weight on your body, more than what's healthy for you. When someone has too much weight, it can make them feel sick, sad, or tired. It's not good for their heart, and it can make playing or running around harder. Just like when you eat too many sweets and get a tummy ache, eating too much food that's not good for you can make your body feel bad. And when lots of people feel this way, it means doctors and hospitals have to work extra hard to help everyone feel better. It's important for all of us to eat healthy foods, like fruits and veggies, and to play outside instead of sitting inside all the time. This helps us stay happy, healthy, and full of energy to play with our friends!"</textarea>
+            </div>
+            <div style="display: flex;">
+                <button onclick="clearFields()">Clear Fields</button>
+                <input type="submit" value="Submit" onclick="setupFeedbackAide()">
+            </div>
+        <!-- </form> -->
+    </div>
+    <!-- STEP 2. Include the script to load LearnosityFeedback API -->
+    <script src="https://feedbackaide.learnosity.com/js"></script>
+
+    <script>
+
+        // The Model required by the generate Feedback method
+        var model = 'advanced-essay';
+
+        // Session UI
+        var sessionUI = null; 
+
+        // sessionUuid
+        var sessionUuid = null; 
+
+        // The Question (Stimulus). 
+        // This is one of the input parameters required by the feedbackSession method
+        var question = `Explain the problems, both personal and societal, resulting from obesity`;
+
+        // The Essay. This is the students essay to be scored. 
+        // This is one of the input parameters required by the feedbackSession method
+        var essay = `<p>Think of obesity as having too much weight on your body, more than what's healthy for you. When someone has too much weight, it can make them feel sick, sad, or tired. It's not good for their heart, and it can make playing or running around harder.</p>
+                        <p>Just like when you eat too many sweets and get a tummy ache, eating too much food that's not good for you can make your body feel bad. And when lots of people feel this way, it means doctors and hospitals have to work extra hard to help everyone feel better.</p>
+                        <p>It's important for all of us to eat healthy foods, like fruits and veggies, and to play outside instead of sitting inside all the time. This helps us stay happy, healthy, and full of energy to play with our friends!</p>`;
+
+        // The Rubric. This is the scoring rubric used to guide our feedback and scoring
+        // This is one of the input parameters required by the feedbackSession method
+        // See Docs on this here: https://help.learnosity.com/hc/en-us/articles/19937827979805-Feedback-Aide-Rubrics
+        var rubric = `
+                {
+            "title": "Obesity Essay Rubric",
+            "type": "analytic",
+            "criteria": [
+                {
+                    "title": "Understanding of the topic",
+                    "type": "discrete",
+                    "levels":[
+                        {
+                            "score": 1,
+                            "title": "Unsatisfactory",
+                            "description": "Fails to demonstrate an understanding of the topic"
+                        },
+                        {
+                            "score": 2,
+                            "title": "Needs Improvement",
+                            "description": "Demonstrates a limited understanding of the topic, with unclear or insufficient analysis"
+                        },
+                        {
+                            "score": 3,
+                            "title": "Satisfactory",
+                            "description": "Demonstrates a basic understanding of the topic, with some basic analysis"
+                        },
+                        {
+                            "score": 4,
+                            "title": "Good",
+                            "description": "Demonstrates a good understanding of the topic, with mostly clear analysis"
+                        },
+                        {
+                            "score": 5,
+                            "title": "Excellent",
+                            "description": "Demonstrates a deep understanding of the topic, with clear and insightful analysis"
+                        }
+                    ]
+                },
+                {
+                    "title": "Identification of Personal and Societal Problems",
+                    "type": "discrete",
+                    "levels": [
+                        {
+                            "score": 1,
+                            "title": "Unsatisfactory",
+                            "description": "Fails to identify or analyse personal and societal problems resulting from obesity"
+                        },
+                        {
+                            "score": 2,
+                            "title": "Needs Improvement",
+                            "description": "Attempts to identify and analyse personal and societal problems resulting from obesity, but is unclear or incomplete"
+                        },
+                        {
+                            "score": 3,
+                            "title": "Satisfactory",
+                            "description": "Identifies and analyses some personal and societal problems resulting from obesity, but lacks detail or clarity"
+                        },
+                        {
+                            "score": 4,
+                            "title": "Good",
+                            "description": "Clearly identifies and analyses both personal and societal problems resulting from obesity, but may lack some detail or depth"
+                        },
+                        {
+                            "score": 5,
+                            "title": "Excellent",
+                            "description": "Clearly and thoroughly identifies and analyses both personal and societal problems resulting from obesity"
+                        }
+                    ]
+                },
+                {
+                    "title": "Use of Evidence",
+                    "type": "discrete",
+                    "levels": [
+                        {
+                            "score": 1,
+                            "title": "Unsatisfactory",
+                            "description": "Does not use evidence to support analysis"
+                        },
+                        {
+                            "score": 2,
+                            "title": "Needs Improvement",
+                            "description": "Uses insufficient or irrelevant evidence to support analysis"
+                        },
+                        {
+                            "score": 3,
+                            "title": "Satisfactory",
+                            "description": "Uses limited or somewhat relevant evidence to support analysis"
+                        },
+                        {
+                            "score": 4,
+                            "title": "Good",
+                            "description": "Uses some relevant and credible evidence to support analysis"
+                        },
+                        {
+                            "score": 5,
+                            "title": "Excellent",
+                            "description": "Uses a range of relevant and credible evidence to support analysis"
+                        }
+                    ]
+                },
+                {
+                    "title": "Organization and Clarity",
+                    "type": "discrete",
+                    "levels": [
+                        {
+                            "score": 1,
+                            "title": "Unsatisfactory",
+                            "description": "Essay is disorganised and unclear, with no strong topic sentences or transitions"
+                        },
+                        {
+                            "score": 2,
+                            "title": "Needs Improvement",
+                            "description": "Essay is poorly organised and unclear, lacking strong topic sentences and transitions"
+                        },
+                        {
+                            "score": 3,
+                            "title": "Satisfactory",
+                            "description": "Essay is somewhat organised and clear, but may lack strong topic sentences and transitions"
+                        },
+                        {
+                            "score": 4,
+                            "title": "Good",
+                            "description": "Essay is mostly organised and clear, with some strong topic sentences and transitions"
+                        },
+                        {
+                            "score": 5,
+                            "title": "Excellent",
+                            "description": "Essay is well-organised and clear, with strong topic sentences and transitions"
+                        }
+                    ]
+                },
+                {
+                    "title": "Grammar and Mechanics",
+                    "type": "discrete",
+                    "levels": [
+                        {
+                            "score": 1,
+                            "title": "Unsatisfactory",
+                            "description": "Severe errors in grammar or mechanics that make the essay incomprehensible"
+                        },
+                        {
+                            "score": 2,
+                            "title": "Needs Improvement",
+                            "description": "Many errors in grammar or mechanics that impede understanding"
+                        },
+                        {
+                            "score": 3,
+                            "title": "Satisfactory",
+                            "description": "Some errors in grammar or mechanics that do not significantly impede understanding"
+                        },
+                        {
+                            "score": 4,
+                            "title": "Good",
+                            "description": "Few minor errors in grammar or mechanics"
+                        },
+                        {
+                            "score": 5,
+                            "title": "Excellent",
+                            "description": "No errors in grammar or mechanics"
+                        }
+                    ]
+                }
+            ]
+        }
+        `;
+
+        function clearFields() {
+            document.querySelector('#field1').value = ''
+            document.querySelector('#field2').value = ''
+        }
+
+        function newSessionUuid() {
+            const newUuid = crypto.randomUUID();
+            return newUuid;
+        }
+
+        // Function to fetch the security token from Learnosity
+        // Docs on Security here: https://help.learnosity.com/hc/en-us/articles/19959510568605-Feedback-Aide-Security-Tokens
+        async function fetchToken(sessionUuid) {
+            try {
+                // Define the test endpoint URL
+                const url = 'https://feedbackaide.learnosity.com/api/token';
+
+                // Define the data to be sent in the POST request
+                const data = new URLSearchParams();
+                data.append('grant_type', 'client_credentials');
+                data.append('scope', `api:feedbackaide feedback_session_uuid:${sessionUuid}:RW`);
+
+                //  STEP 1. Get an OAuth key and secret (provided here in external json file)
+                const configResponse = await fetch('config.json');
+                // Parse the config JSON data
+                const config = await configResponse.json();
+                // Extract the OAuth key and secret from the config file
+                const { oauthKey, oauthSecret } = config;
+                const secret = document.querySelector('#field3').value
+                sessionStorage.setItem('apiSecret', secret);
+                // Create the Basic Auth header
+                const authHeader = 'Basic ' + btoa(`OSFVQ1kzSRdpgUTnIIN1qPGXvDJTueOE:${secret}`);
+
+                // Make a POST request to the endpoint
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Authorization': authHeader,
+                    },
+                    body: data.toString(),
+                });
+
+                // Check if the response is ok (status code 200-299)
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                // Parse the response JSON data
+                const result = await response.json();
+
+                // Return the result
+                console.log(result);
+                return result;
+            } catch (error) {
+                // Log any errors that occur during the fetch
+                console.error('Fetch error:', error);
+                throw error;
+            }
+        }
+
+
+        async function setupFeedbackAide() {
+            try {
+                // STEP 2: Create an app instance using LearnosityFeedbackAide.init
+                const question = document.querySelector('#field1').value
+                const essay = document.querySelector('#field2').value
+                
+                console.log('question', question);
+                console.log('essay', essay);
+                
+                const feedbackApp = await LearnosityFeedbackAide.init();
+
+                const sessionUuid = newSessionUuid();
+
+                // STEP 3. Create a secured token for the requesting feedback session
+                const token = await fetchToken(sessionUuid);
+
+                // STEP 4: Create a feedback session using feedbackApp.feedbackSession
+                const feedbackSession = await feedbackApp.feedbackSession(token, {
+                    "session_uuid": sessionUuid,
+                    "stimulus": question,
+                    "response": essay,
+                    "rubric": JSON.parse(rubric)
+                });
+
+                // STEP 5. Use the feedback session ui method to display the student's essay, rubric 
+                // together with score and feedback generated by Learnosity AI engine
+                const sessionUI = await feedbackSession.createUI();
+
+                sessionUI.attach(document.querySelector('.feedback-session-01'));
+
+                // STEP 6. Retrieve the final score, maxScore, feedback 
+                const { response, cancel } = sessionUI.generateFeedback({ "model": model });
+            } catch (error) {
+                console.error('Setup error:', error);
+            }
+        }
+
+        // Main window load event listener
+        window.addEventListener('load', () => {
+            // setupFeedbackAide();
+            console.log("Done");
+    
+        });
+
+
+    </script>
+
+    <!-- Part of Step 2 - This is the container where the feedback session will be injected -->
+    <div class="feedback-session-01"></div>
+    <script>
+        // Function to auto-adjust input height
+        function adjustInputHeight(element) {
+            element.style.height = 'auto';
+            element.style.height = element.scrollHeight + 'px';
+        }
+
+        // Function to auto-adjust textarea height
+        function adjustTextareaHeight(element) {
+            element.style.height = 'auto';
+            element.style.height = element.scrollHeight + 'px';
+        }
+        function checkSecret() {
+            console.log('checkSecret');
+            const secret = sessionStorage.getItem('apiSecret') ?? '';
+            document.querySelector('#field3').value = secret
+        }
+
+        // Initialize both fields' heights on page load
+        window.onload = function() {
+            adjustInputHeight(document.getElementById('field1'));
+            adjustTextareaHeight(document.getElementById('field2'));
+            checkSecret();
+        };
+    </script>
+</body>
+</html>
