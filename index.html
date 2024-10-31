@@ -257,11 +257,6 @@
                 data.append('scope', `api:feedbackaide feedback_session_uuid:${sessionUuid}:RW`);
 
                 //  STEP 1. Get an OAuth key and secret (provided here in external json file)
-                const configResponse = await fetch('config.json');
-                // Parse the config JSON data
-                const config = await configResponse.json();
-                // Extract the OAuth key and secret from the config file
-                const { oauthKey, oauthSecret } = config;
                 const secret = document.querySelector('#field3').value
                 sessionStorage.setItem('apiSecret', secret);
                 // Create the Basic Auth header
